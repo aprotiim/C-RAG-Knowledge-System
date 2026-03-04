@@ -1,300 +1,109 @@
-# C-RAG-Knowledge-System
-Corrective RAG: Reducing Hallucinations in Retrieval-Augmented Generation
+# Corrective Retrieval Augmented Generation (CRAG)
 
-Implementation of Corrective Retrieval Augmented Generation (CRAG) from the research paper:
+Implementation of the research paper:
 
-Corrective Retrieval Augmented Generation
+**Corrective Retrieval Augmented Generation**
 https://arxiv.org/pdf/2401.15884
 
-This project demonstrates how LLM hallucinations in standard RAG systems can be mitigated by evaluating retrieval quality and correcting the retrieval process dynamically.
+This project implements CRAG, a framework designed to improve Retrieval-Augmented Generation (RAG) systems by detecting incorrect retrieval results and correcting them before generation.
 
-Motivation
+CRAG improves RAG by introducing:
 
-Large Language Models often hallucinate when:
+* Retrieval evaluation
 
-retrieved documents are irrelevant
+* Corrective retrieval
 
-retrieved context is incomplete
+* Knowledge refinement
 
-retrieval systems fail to capture true intent of the query
+The system ensures that LLMs only generate answers using reliable knowledge.
 
-Standard RAG assumes retrieved documents are always useful.
+## Problem with Standard RAG
 
-This assumption is incorrect.
+Standard RAG pipelines assume the retriever always returns relevant documents.
 
-Corrective RAG introduces a retrieval evaluator and correction loop that improves factual grounding.
+However, retrieval can fail due to:
 
-Standard RAG vs Corrective RAG
-Standard RAG Pipeline
-4
+* irrelevant documents
 
-Standard workflow:
+* outdated information
 
-User query
+* incomplete context
 
-Query embedding
+When this happens, the LLM produces hallucinated answers.
 
-Vector database retrieval
+## Standard RAG Architecture
+<img width="2561" height="945" alt="image" src="https://github.com/user-attachments/assets/71efc2b9-e8b9-4658-b592-d056c2e11532" />
 
-Top-k documents retrieved
+**Issue** - The retriever has no mechanism to verify retrieval quality, which can lead to hallucinations.
 
-LLM generates answer
+## Corrective RAG Architecture
 
-Problem
+<img width="832" height="570" alt="image" src="https://github.com/user-attachments/assets/533bdf9d-9422-454f-a054-facd53d3e34c" />
 
-If retrieved documents are wrong → LLM hallucinates.
+## Retrieval Evaluator (Core Idea of CRAG)
 
-Corrective RAG Architecture
-4
+CRAG introduces a lightweight retrieval evaluator that estimates the quality of retrieved documents.
+It assigns a confidence category:
 
-Corrective RAG adds a retrieval evaluator and correction mechanism.
+* Correct
 
-Instead of trusting retrieved documents blindly, CRAG performs:
+* Incorrect
 
-1️⃣ Document relevance evaluation
-2️⃣ Decision routing
-3️⃣ External knowledge retrieval if needed
+* Ambiguous
 
-CRAG Decision Flow
-User Query
-    │
-    ▼
-Vector Retriever (FAISS)
-    │
-    ▼
-Retrieved Documents
-    │
-    ▼
-LLM Retrieval Evaluator
-    │
-    ├── Correct
-    │     └─ Context Refinement → Generate Answer
-    │
-    ├── Ambiguous
-    │     └─ Query Rewrite → Web Search → Context Refinement
-    │
-    └── Incorrect
-          └─ Web Search → Context Refinement
+Based on this evaluation, the system decides how to proceed.
 
-This creates a self-correcting RAG system.
+## Knowledge Refinement
 
-Key Features
-Baseline RAG
+Even when retrieval is correct, documents often contain irrelevant text.
 
-PDF ingestion
+CRAG introduces a Decompose-Then-Recompose algorithm.
 
-Chunking and embedding
+This algorithm:
 
-FAISS vector database
+* Decomposes documents into smaller units
 
-Retrieval augmented generation
+* Filters irrelevant information
 
-Corrective RAG (CRAG)
+* Recombines useful knowledge
 
-Implemented components from the research paper:
+## Complete CRAG Inference Pipeline
+<img width="1329" height="1557" alt="mermaid-diagram" src="https://github.com/user-attachments/assets/74549e38-b512-4f1c-a4d5-075244f2fc82" />
 
-Retrieval Evaluator
+## Advantages of CRAG
 
-LLM classifies retrieved documents into:
+CRAG improves traditional RAG systems by:
 
-Label	Meaning
-Correct	Relevant information present
-Ambiguous	Partial relevance
-Incorrect	Irrelevant documents
-Query Rewriting
+* detecting low-quality retrieval
 
-Ambiguous queries are rewritten before external search.
+* correcting knowledge using web search
 
-Example:
+* refining document context
 
-Original Query:
-"What does CRAG improve?"
-
-Rewritten Query:
-"How does Corrective Retrieval Augmented Generation reduce hallucinations?"
-External Knowledge Retrieval
+* reducing hallucinations
 
-If retrieval fails:
+Experiments in the paper show significant improvements across multiple QA and generation tasks.
 
-Web search using Tavily
+## Tech Stack
 
-Additional knowledge sources retrieved
+* Python
 
-Knowledge Refinement
+* LangChain
 
-Refinement process:
+* FAISS
 
-Sentence level filtering
+* OpenAI
 
-Removal of irrelevant context
+* Jupyter
 
-Creation of clean context for LLM
+## Summary
 
-Project Architecture
-User Query
-     │
-     ▼
-Retriever (FAISS)
-     │
-     ▼
-Document Evaluator (LLM)
-     │
-     ├─ Correct → Context Refinement → Answer Generation
-     │
-     ├─ Ambiguous → Query Rewrite → Web Search → Refinement
-     │
-     └─ Incorrect → Web Search → Refinement
-Tech Stack
-Component	Technology
-LLM	OpenAI GPT
-Orchestration	LangGraph
-Retrieval	FAISS
-Framework	LangChain
-Web Search	Tavily
-Language	Python
-Repository Structure
-corrective-rag/
-│
-├── notebooks/
-│   ├── 1_basic_rag.ipynb
-│   └── 6_ambiguous.ipynb
-│
-├── src/
-│   ├── retriever.py
-│   ├── evaluator.py
-│   ├── query_rewrite.py
-│   ├── web_search.py
-│   └── generator.py
-│
-├── demo/
-│   └── streamlit_app.py
-│
-├── data/
-│   └── sample_documents
-│
-├── requirements.txt
-├── .env.example
-└── README.md
-Installation
+CRAG enhances traditional RAG by introducing:
 
-Clone repository
+1. Retrieval Evaluation
 
-git clone https://github.com/YOUR_USERNAME/corrective-rag
-cd corrective-rag
+2. Corrective Retrieval
 
-Install dependencies
+3. Knowledge Refinement
 
-pip install -r requirements.txt
-Environment Variables
-
-Create .env file
-
-OPENAI_API_KEY=your_api_key
-TAVILY_API_KEY=your_api_key
-Running the Project
-
-Run notebooks:
-
-notebooks/1_basic_rag.ipynb
-
-or
-
-notebooks/6_ambiguous.ipynb
-
-Example query:
-
-What are the key contributions of the CRAG paper?
-Demo UI (Streamlit)
-
-This project includes a lightweight Streamlit demo.
-
-Run:
-
-streamlit run demo/streamlit_app.py
-
-Interface features:
-
-User query input
-
-Retrieval evaluation output
-
-Web search trigger visualization
-
-Final answer with citations
-
-Evaluation
-
-To evaluate improvements over standard RAG:
-
-Dataset:
-
-~50 evaluation queries
-
-Document QA benchmark
-
-Metrics used:
-
-Metric	Description
-Faithfulness	Answer grounded in context
-Correctness	Answer matches ground truth
-Hallucination rate	Incorrect facts generated
-Retrieval quality	Relevance of retrieved chunks
-Example Comparison
-Model	Hallucination Rate
-Baseline RAG	Higher
-Corrective RAG	Lower
-
-CRAG improves reliability by correcting retrieval before generation.
-
-Example Output
-
-Baseline RAG:
-
-Answer generated using retrieved chunks.
-Context may contain irrelevant information.
-
-Corrective RAG:
-
-Retrieval verdict: AMBIGUOUS
-Query rewritten
-Web search triggered
-Context refined
-Grounded answer generated
-Future Improvements
-
-Planned extensions:
-
-Hybrid retrieval (BM25 + vector)
-
-RAGAS evaluation metrics
-
-multi-agent retrieval pipelines
-
-multi-document QA benchmarks
-
-knowledge graph integration
-
-References
-
-Shi-Qi Yan et al.
-
-Corrective Retrieval Augmented Generation
-https://arxiv.org/pdf/2401.15884
-
-License
-
-MIT License
-
-Summary
-
-This project demonstrates:
-
-Implementation of research-grade RAG architecture
-
-Hallucination mitigation techniques
-
-LLM-based retrieval evaluation
-
-Dynamic knowledge correction pipelines
-
-This type of system is used in modern production LLM applications and AI agents.
+This allows LLM systems to detect and fix retrieval errors before generation, significantly improving reliability.
